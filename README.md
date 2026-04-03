@@ -5,7 +5,7 @@ Secure-by-default OpenClaw and ArmorClaw runtime for a financial agent. This rep
 ## Layer Map
 
 - Layer 1: `DataTrustLayer` sanitizes inputs, redacts secrets, and requires trusted evidence before a trade can proceed.
-- Layer 2: intentionally external. Your friend’s sandbox is the boundary that feeds structured intents into this repo.
+- Layer 2: intentionally external.
 - Layer 3: `validateIntentEnvelope` enforces a strict structured intent contract.
 - Layer 4: `FormalVerifier` runs a Python Z3 verifier when available and can fall back to a deterministic JS verifier for local dry runs.
 - Layer 5: `PolicyEngine` enforces deny-by-default ArmorClaw runtime rules from `policies/financial-guardrails.json`.
