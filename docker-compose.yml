@@ -1,0 +1,35 @@
+services:
+  openclaw:
+    image: node:24-alpine
+    container_name: openclaw_runtime
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "18789:18789"
+      - "1933:1933"
+      - "8020:8020"
+    environment:
+      - EXECUTION_MODE=dry-run
+      - FORMAL_VERIFY_MODE=strict
+      - Z3_VERIFIER_URL=http://z3_verifier:5001
+    command: >
+      sh -c "npm install -g openclaw@latest &&
+             npm install &&
+             node src/server.js"
+    restart: unless-stopped
+    depends_on:
+      - z3_verifier
+
+  z3_verifier:
+    image: python:3.11-slim
+    container_name: z3_verifier
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -c "pip install z3-solver fastapi uvicorn --quiet &&
+             uvicorn python.formal_verify:app --host 0.0.0.0 --port 5001"
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
