@@ -265,9 +265,15 @@ export class ArmorClawPipeline {
     }
 
     this.behaviorMonitor.record(evaluation.envelope);
+    const executionStatus = executionDecision.execution?.simulated
+      ? "DRY-RUN"
+      : "PASS";
+    const executionDetail = executionDecision.execution?.simulated
+      ? "no real order sent"
+      : `broker=${executionDecision.execution?.broker ?? "unknown"}`;
     const executionTrace = [
       ...(evaluation.layer_trace ?? []),
-      traceEntry("L8", "ExecutionProxy", "DRY-RUN", "no real order sent")
+      traceEntry("L8", "ExecutionProxy", executionStatus, executionDetail)
     ];
     const finalDecision = {
       ...evaluation,

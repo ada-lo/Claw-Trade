@@ -1,4 +1,6 @@
 #!/bin/sh
+set -eu
+
 echo "Setting up agent workspaces..."
 
 for agent in planner data technical-analysis fundamental-analysis sentiment-analysis strategy risk; do

@@ -1,7 +1,8 @@
 FROM node:24-alpine
 WORKDIR /app
 RUN npm install -g openclaw@latest
-RUN cd /usr/local/lib/node_modules/openclaw && npm install grammy @grammyjs/runner @grammyjs/transformer-throttler --save
+RUN cd /usr/local/lib/node_modules/openclaw && npm install grammy @grammyjs/runner @grammyjs/transformer-throttler @grammyjs/parse-mode @grammyjs/menu --save
+RUN mkdir -p /root/.openclaw /app/runtime/audit /app/runtime/keys /app/runtime/state && (openclaw config set gateway.bind lan || true)
 COPY package*.json ./
 RUN npm install
 COPY . .

@@ -1,11 +1,9 @@
-node_modules/
 .env
-runtime/
-*.log
-*.pem
-__pycache__/
-runtime/keys/
-runtime/audit/
-runtime/state/
+runtime/keys/*.pem
+runtime/audit/*.jsonl
+runtime/state/*.json
 node_modules/
 .agents/
+*.bak
+*.log
+__pycache__/
