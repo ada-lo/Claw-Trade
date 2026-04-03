@@ -28,7 +28,7 @@
   agents: {
     defaults: {
       sandbox: {
-        mode: "all",
+        mode: "off",
         backend: "docker",
         scope: "agent",
         workspaceAccess: "ro",
@@ -48,8 +48,7 @@
       model: {
         primary: "groq/llama-4-scout-17b-16e-instruct",
         fallbacks: [
-          "google/gemini-2.0-flash",
-          "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
+          "google/gemini-2.0-flash"
         ]
       }
     },
@@ -62,8 +61,7 @@
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
+            "google/gemini-2.0-flash"
           ]
         }
       },
@@ -73,8 +71,7 @@
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
+            "google/gemini-2.0-flash"
           ]
         }
       },
@@ -84,8 +81,7 @@
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
+            "google/gemini-2.0-flash"
           ]
         }
       },
@@ -95,8 +91,7 @@
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
+            "google/gemini-2.0-flash"
           ]
         }
       },
@@ -107,10 +102,7 @@
         workspace: "/app/.agents/technical-analysis",
         model: {
           primary: "google/gemini-2.0-flash",
-          fallbacks: [
-            "groq/llama-4-scout-17b-16e-instruct",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
-          ]
+          fallbacks: ["groq/llama-4-scout-17b-16e-instruct"]
         }
       },
       {
@@ -118,10 +110,7 @@
         workspace: "/app/.agents/fundamental-analysis",
         model: {
           primary: "google/gemini-2.0-flash",
-          fallbacks: [
-            "groq/llama-4-scout-17b-16e-instruct",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
-          ]
+          fallbacks: ["groq/llama-4-scout-17b-16e-instruct"]
         }
       },
       {
@@ -129,10 +118,7 @@
         workspace: "/app/.agents/sentiment-analysis",
         model: {
           primary: "google/gemini-2.0-flash",
-          fallbacks: [
-            "groq/llama-4-scout-17b-16e-instruct",
-            "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
-          ]
+          fallbacks: ["groq/llama-4-scout-17b-16e-instruct"]
         }
       }
     ]
