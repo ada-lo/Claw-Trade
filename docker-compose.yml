@@ -17,18 +17,21 @@ services:
     env_file:
       - .env
     environment:
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - HF_TOKEN=${HF_TOKEN}
       - HUGGINGFACE_HUB_TOKEN=${HF_TOKEN}
-      - EXECUTION_MODE=${EXECUTION_MODE}
-      - FORMAL_VERIFY_MODE=${FORMAL_VERIFY_MODE}
-      - Z3_VERIFIER_URL=${Z3_VERIFIER_URL}
+      - EXECUTION_MODE=${EXECUTION_MODE:-dry-run}
+      - FORMAL_VERIFY_MODE=${FORMAL_VERIFY_MODE:-strict}
+      - Z3_VERIFIER_URL=${Z3_VERIFIER_URL:-http://z3_verifier:5001}
       - NODE_OPTIONS=--max-old-space-size=512
     mem_limit: 1g
     security_opt:
       - no-new-privileges:true
+    # Gateway does NOT auto-start. To start it manually:
+    #   docker exec -it openclaw_runtime openclaw gateway run
+    # Then open: http://localhost:18789
     command: /app/scripts/openclaw-runtime.sh
     restart: unless-stopped
     depends_on:

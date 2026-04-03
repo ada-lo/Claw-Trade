@@ -24,7 +24,6 @@
     }
   },
 
-  // Global fallback defaults
   agents: {
     defaults: {
       sandbox: {
@@ -46,9 +45,10 @@
         }
       },
       model: {
-        primary: "groq/llama-4-scout-17b-16e-instruct",
+        primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
         fallbacks: [
-          "google/gemini-2.0-flash"
+          "google/gemini-2.0-flash",
+          "huggingface/Qwen/Qwen3-8B:fastest"
         ]
       }
     },
@@ -59,9 +59,10 @@
         id: "planner",
         workspace: "/app/.agents/planner",
         model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
+          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash"
+            "google/gemini-2.0-flash",
+            "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
       },
@@ -69,9 +70,10 @@
         id: "data",
         workspace: "/app/.agents/data",
         model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
+          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash"
+            "google/gemini-2.0-flash",
+            "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
       },
@@ -79,9 +81,10 @@
         id: "strategy",
         workspace: "/app/.agents/strategy",
         model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
+          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash"
+            "google/gemini-2.0-flash",
+            "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
       },
@@ -89,9 +92,10 @@
         id: "risk",
         workspace: "/app/.agents/risk",
         model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
+          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
           fallbacks: [
-            "google/gemini-2.0-flash"
+            "google/gemini-2.0-flash",
+            "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
       },
@@ -102,7 +106,10 @@
         workspace: "/app/.agents/technical-analysis",
         model: {
           primary: "google/gemini-2.0-flash",
-          fallbacks: ["groq/llama-4-scout-17b-16e-instruct"]
+          fallbacks: [
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+            "huggingface/Qwen/Qwen3-8B:fastest"
+          ]
         }
       },
       {
@@ -110,7 +117,10 @@
         workspace: "/app/.agents/fundamental-analysis",
         model: {
           primary: "google/gemini-2.0-flash",
-          fallbacks: ["groq/llama-4-scout-17b-16e-instruct"]
+          fallbacks: [
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+            "huggingface/Qwen/Qwen3-8B:fastest"
+          ]
         }
       },
       {
@@ -118,7 +128,10 @@
         workspace: "/app/.agents/sentiment-analysis",
         model: {
           primary: "google/gemini-2.0-flash",
-          fallbacks: ["groq/llama-4-scout-17b-16e-instruct"]
+          fallbacks: [
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+            "huggingface/Qwen/Qwen3-8B:fastest"
+          ]
         }
       }
     ]
@@ -133,8 +146,11 @@
         apiKey: "${GROQ_API_KEY}",
         api: "openai-completions",
         models: [
-          { id: "llama-4-scout-17b-16e-instruct", name: "Llama 4 Scout" }
+          { id: "meta-llama/llama-4-scout-17b-16e-instruct", name: "Llama 4 Scout" }
         ]
+      },
+      huggingface: {
+        apiKey: "${HF_TOKEN}"
       }
     }
   },
@@ -142,6 +158,7 @@
   env: {
     GROQ_API_KEY: "${GROQ_API_KEY}",
     GOOGLE_API_KEY: "${GOOGLE_API_KEY}",
-    HF_TOKEN: "${HF_TOKEN}"
+    HF_TOKEN: "${HF_TOKEN}",
+    HUGGINGFACE_HUB_TOKEN: "${HF_TOKEN}"
   }
 }
