@@ -9,6 +9,6 @@ COPY . .
 COPY openclaw-plugin/armorclaw-financial-guard /opt/claw-trade/plugins/armorclaw-financial-guard
 COPY openclaw.json5 /root/.openclaw/openclaw.json5
 RUN chmod 755 /opt/claw-trade /opt/claw-trade/plugins /opt/claw-trade/plugins/armorclaw-financial-guard && chmod 644 /opt/claw-trade/plugins/armorclaw-financial-guard/*
-RUN chmod +x scripts/setup-agents.sh scripts/openclaw-entrypoint.sh && sh scripts/setup-agents.sh
+RUN chmod +x scripts/setup-agents.sh scripts/openclaw-entrypoint.sh scripts/openclaw-runtime.sh && sh scripts/setup-agents.sh
 RUN npm run generate:keys 2>/dev/null || true
 ENTRYPOINT ["/app/scripts/openclaw-entrypoint.sh"]

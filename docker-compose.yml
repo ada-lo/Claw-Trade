@@ -29,7 +29,7 @@ services:
     mem_limit: 1g
     security_opt:
       - no-new-privileges:true
-    command: node src/server.js
+    command: /app/scripts/openclaw-runtime.sh
     restart: unless-stopped
     depends_on:
       z3_verifier:

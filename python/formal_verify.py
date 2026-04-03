@@ -27,27 +27,25 @@ def health():
 
 @app.post("/verify", response_model=VerifyResult)
 def verify(req: IntentRequest):
+    solver = Solver()
     amount = Real("amount")
+
+    trade_cost = RealVal(str(req.quantity * req.limit_price))
+    total_exposure = RealVal(str((req.quantity * req.limit_price) + req.daily_spent))
+    daily_limit = RealVal(str(req.daily_limit))
     ticker_ok = BoolVal(req.ticker in req.allowed_tickers)
 
-    s = Solver()
+    solver.add(amount == total_exposure)
+    solver.add(amount <= daily_limit)
+    solver.add(ticker_ok)
 
-    # Constraint 1: trade cost must not exceed daily limit
-    trade_cost = req.quantity * req.limit_price
-    total_exposure = trade_cost + req.daily_spent
-    s.add(amount == total_exposure)
-    s.add(amount <= req.daily_limit)
-
-    # Constraint 2: ticker must be in allowed list
-    s.add(ticker_ok)
-
-    if s.check() == sat:
+    if solver.check() == sat:
         return VerifyResult(allowed=True, reason="SAT: intent satisfies all policy constraints")
     else:
         core_reason = (
             f"UNSAT: trade would exceed daily limit "
-            f"(${total_exposure:,.0f} > ${req.daily_limit:,.0f})"
-            if total_exposure > req.daily_limit
+            f"(${(req.quantity * req.limit_price) + req.daily_spent:,.0f} > ${req.daily_limit:,.0f})"
+            if (req.quantity * req.limit_price) + req.daily_spent > req.daily_limit
             else f"UNSAT: ticker {req.ticker} not in allowed list"
         )
         return VerifyResult(allowed=False, reason=core_reason)
