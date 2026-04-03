@@ -4,7 +4,7 @@
 
 The repo assumes this boundary:
 
-- Outside this repo: sandboxed OpenClaw reasoning layer
+- OpenClaw runtime boundary: sandboxed reasoning layer configured via `openclaw.json5`
 - Inside this repo: deterministic enforcement, signing, proxying, and audit
 
 ## Flow

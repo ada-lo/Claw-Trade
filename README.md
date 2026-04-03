@@ -2,7 +2,7 @@
 
 Claw-Trade is a financial AI agent runtime built around OpenClaw, ArmorClaw, and Z3-style formal verification. The repo separates reasoning from execution so an LLM can propose an intent, but only a deterministic security pipeline is allowed to approve, sign, and execute a trade.
 
-This repo implements the non-sandbox layers of the architecture. The LLM sandbox itself is treated as external and untrusted.
+This repo includes an OpenClaw-configured L2 sandbox boundary through [openclaw.json5](/d:/PROJECTSSS/Claw-Trade/openclaw.json5) and the agent workspaces under `.agents/`. What lives inside the Claw-Trade application code is the deterministic enforcement stack around that sandbox. In other words: L2 is present operationally, but it is provided by OpenClaw runtime configuration rather than custom sandbox code in `src/`.
 
 ## What It Does
 
@@ -18,7 +18,7 @@ This repo implements the non-sandbox layers of the architecture. The LLM sandbox
 Sanitizes raw inputs, redacts secrets, and blocks suspicious prompt-injection text.
 
 2. `L2 Sandbox`
-External boundary. The LLM sandbox is not implemented in this repo, but the pipeline treats it as untrusted input.
+Provided by OpenClaw runtime configuration in [openclaw.json5](/d:/PROJECTSSS/Claw-Trade/openclaw.json5). The Claw-Trade pipeline treats anything coming out of that sandbox as untrusted and re-validates it before execution.
 
 3. `L3 Schema`
 Validates the structured intent envelope before any enforcement logic runs.

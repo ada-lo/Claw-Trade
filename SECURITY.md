@@ -18,6 +18,7 @@ This repo treats the LLM side of the system as untrusted. The only thing it is a
 
 ## What This Repo Covers
 
+- OpenClaw-configured L2 sandbox settings and agent isolation policy
 - Input trust and sanitization
 - Structured intent validation
 - Deterministic formal verification
@@ -29,7 +30,7 @@ This repo treats the LLM side of the system as untrusted. The only thing it is a
 
 ## What This Repo Does Not Cover
 
-- Container or WASM isolation for the LLM sandbox
+- A custom sandbox implementation beyond what OpenClaw provides through configuration
 - GPU, browser, or VM hardening around OpenClaw itself
 - Network segmentation around the host running OpenClaw
 
