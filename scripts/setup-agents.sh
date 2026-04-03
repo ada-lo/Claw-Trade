@@ -1,112 +1,14 @@
-{
-  // Global fallback defaults
-  agents: {
-    defaults: {
-      model: {
-        primary: "groq/llama-4-scout-17b-16e-instruct",
-        fallbacks: [
-          "google/gemini-2.0-flash",
-          "huggingface/meta-llama/Llama-4-Scout-17B-16E-Instruct:fastest"
-        ]
-      }
-    },
+#!/bin/sh
+echo "Setting up agent workspaces..."
 
-    list: [
-      // REASONING-HEAVY → Groq Llama 4 (free, fast)
-      {
-        id: "planner",
-        workspace: "/app/.agents/planner",
-        model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
-          fallbacks: ["google/gemini-2.0-flash"]
-        }
-      },
-      {
-        id: "data",
-        workspace: "/app/.agents/data",
-        model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
-          fallbacks: ["google/gemini-2.0-flash"]
-        }
-      },
-      {
-        id: "strategy",
-        workspace: "/app/.agents/strategy",
-        model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
-          fallbacks: ["google/gemini-2.0-flash"]
-        }
-      },
-      {
-        id: "risk",
-        workspace: "/app/.agents/risk",
-        model: {
-          primary: "groq/llama-4-scout-17b-16e-instruct",
-          fallbacks: ["google/gemini-2.0-flash"]
-        }
-      },
+for agent in planner data technical-analysis fundamental-analysis sentiment-analysis strategy risk; do
+  mkdir -p /app/.agents/$agent
+  echo "# $agent Agent" > /app/.agents/$agent/AGENTS.md
+  echo "## Rules" >> /app/.agents/$agent/AGENTS.md
+  echo "- Only output structured JSON intents" >> /app/.agents/$agent/AGENTS.md
+  echo "- Never execute trades directly" >> /app/.agents/$agent/AGENTS.md
+  echo "- Always pass output through ArmorClaw pipeline" >> /app/.agents/$agent/AGENTS.md
+  echo "Created workspace for $agent"
+done
 
-      // PARALLEL ANALYSIS → Gemini 2.0 Flash (free, 1500 req/day each)
-      {
-        id: "technical-analysis",
-        workspace: "/app/.agents/technical-analysis",
-        model: {
-          primary: "google/gemini-2.0-flash",
-          fallbacks: [
-            "huggingface/Qwen/Qwen3-8B:fastest",
-            "groq/llama-4-scout-17b-16e-instruct"
-          ]
-        }
-      },
-      {
-        id: "fundamental-analysis",
-        workspace: "/app/.agents/fundamental-analysis",
-        model: {
-          primary: "google/gemini-2.0-flash",
-          fallbacks: [
-            "huggingface/Qwen/Qwen3-8B:fastest",
-            "groq/llama-4-scout-17b-16e-instruct"
-          ]
-        }
-      },
-      {
-        id: "sentiment-analysis",
-        workspace: "/app/.agents/sentiment-analysis",
-        model: {
-          primary: "google/gemini-2.0-flash",
-          fallbacks: [
-            "huggingface/Qwen/Qwen3-8B:fastest",
-            "groq/llama-4-scout-17b-16e-instruct"
-          ]
-        }
-      }
-    ]
-  },
-
-  // Provider configs
-  models: {
-    mode: "merge",
-    providers: {
-      groq: {
-        baseUrl: "https://api.groq.com/openai/v1",
-        apiKey: "${GROQ_API_KEY}",
-        api: "openai-completions",
-        models: [
-          { id: "llama-4-scout-17b-16e-instruct", name: "Llama 4 Scout" }
-        ]
-      },
-      google: {
-        apiKey: "${GOOGLE_API_KEY}"
-      },
-      huggingface: {
-        apiKey: "${HF_TOKEN}"
-      }
-    }
-  },
-
-  env: {
-    GROQ_API_KEY: "${GROQ_API_KEY}",
-    GOOGLE_API_KEY: "${GOOGLE_API_KEY}",
-    HF_TOKEN: "${HF_TOKEN}"
-  }
-}
+echo "Done."
