@@ -1,0 +1,14 @@
+{
+  "name": "claw-trade",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Secure OpenClaw and ArmorClaw runtime for paper-trading agents.",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "demo:allowed": "node src/demo.js allowed",
+    "demo:blocked": "node src/demo.js blocked",
+    "start:server": "node src/server.js",
+    "generate:keys": "node scripts/generate-ed25519-keys.js"
+  }
+}

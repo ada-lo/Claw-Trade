@@ -1,0 +1,177 @@
+{
+  "profile": "financial-guard",
+  "execution": {
+    "mode": "dry-run",
+    "paper_trading_only": true
+  },
+  "data_trust": {
+    "allowlisted_providers": [
+      "alpaca",
+      "polygon",
+      "sec",
+      "bloomberg",
+      "reuters",
+      "manual_override"
+    ],
+    "min_source_confirmations": 2,
+    "prompt_injection_patterns": [
+      "ignore previous instructions",
+      "disable armorclaw",
+      "transfer all funds",
+      "email .*api key",
+      "reveal .*secret",
+      "bypass .*policy",
+      "openclaw gateway token",
+      "install this skill",
+      "visit .*localhost"
+    ],
+    "secret_redaction_patterns": [
+      "(?i)apca-[a-z0-9\\-]{8,}",
+      "(?i)api[_ -]?key\\s*[:=]\\s*[A-Za-z0-9_\\-]{8,}",
+      "(?i)secret\\s*[:=]\\s*[A-Za-z0-9_\\-]{8,}"
+    ]
+  },
+  "intent_schema": {
+    "allowed_intent_types": [
+      "trade",
+      "read_market_data",
+      "write_report"
+    ],
+    "allowed_tools": [
+      "alpaca.place_order",
+      "marketdata.quote",
+      "filesystem.write_report"
+    ]
+  },
+  "market": {
+    "allowed_tickers": [
+      "AAPL",
+      "MSFT",
+      "NVDA",
+      "AMD",
+      "GOOGL"
+    ],
+    "allowed_asset_classes": [
+      "us_equity"
+    ],
+    "market_hours_only": true,
+    "blocked_trading_dates": []
+  },
+  "risk_limits": {
+    "max_single_order_notional_usd": 5000,
+    "max_daily_notional_usd": 10000,
+    "max_portfolio_exposure_usd": 10000,
+    "max_shares_per_order": 25
+  },
+  "filesystem": {
+    "allowed_roots": [
+      "workspace://reports",
+      "workspace://analysis"
+    ],
+    "blocked_path_fragments": [
+      "..",
+      ".ssh",
+      ".env",
+      "secrets",
+      "keys"
+    ]
+  },
+  "behavior_monitor": {
+    "max_tool_calls_per_minute": 5,
+    "max_distinct_tickers_per_day": 3,
+    "baseline_tickers": [
+      "AAPL",
+      "MSFT",
+      "NVDA"
+    ],
+    "require_extra_confirmation_sources_for_unusual_tickers": 3,
+    "cooldown_seconds": 60
+  },
+  "execution_proxy": {
+    "require_signature": true,
+    "require_unique_nonce": true,
+    "broker": "alpaca-paper"
+  },
+  "runtime_rules": [
+    {
+      "id": "tool-allowlist",
+      "message": "Tool is not approved by policy.",
+      "field": "intent.tool",
+      "operator": "in",
+      "value_from": "intent_schema.allowed_tools"
+    },
+    {
+      "id": "intent-type-allowlist",
+      "message": "Intent type is not approved by policy.",
+      "field": "intent.type",
+      "operator": "in",
+      "value_from": "intent_schema.allowed_intent_types"
+    },
+    {
+      "id": "ticker-allowlist",
+      "when": {
+        "path": "intent.type",
+        "eq": "trade"
+      },
+      "message": "Ticker is not approved by policy.",
+      "field": "intent.ticker",
+      "operator": "in",
+      "value_from": "market.allowed_tickers"
+    },
+    {
+      "id": "asset-class-allowlist",
+      "when": {
+        "path": "intent.type",
+        "eq": "trade"
+      },
+      "message": "Asset class is not approved by policy.",
+      "field": "intent.asset_class",
+      "operator": "in",
+      "value_from": "market.allowed_asset_classes"
+    },
+    {
+      "id": "max-shares-per-order",
+      "when": {
+        "path": "intent.type",
+        "eq": "trade"
+      },
+      "message": "Share count exceeds the policy cap.",
+      "field": "intent.quantity",
+      "operator": "lte",
+      "value_from": "risk_limits.max_shares_per_order"
+    },
+    {
+      "id": "market-hours-open",
+      "when": {
+        "path": "intent.type",
+        "eq": "trade"
+      },
+      "message": "Trading is blocked outside market hours.",
+      "field": "state.market_hours_open",
+      "operator": "eq",
+      "value": true
+    },
+    {
+      "id": "report-path-scope",
+      "when": {
+        "path": "intent.type",
+        "eq": "write_report"
+      },
+      "message": "File write escaped the approved workspace roots.",
+      "field": "intent.file_paths",
+      "operator": "paths_within",
+      "value_from": "filesystem.allowed_roots"
+    },
+    {
+      "id": "report-path-fragments",
+      "when": {
+        "path": "intent.type",
+        "eq": "write_report"
+      },
+      "message": "File write contains blocked path fragments.",
+      "field": "intent.file_paths",
+      "operator": "not_contains_any",
+      "value_from": "filesystem.blocked_path_fragments"
+    }
+  ]
+}
