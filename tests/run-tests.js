@@ -185,6 +185,49 @@ const cases = [
       assert.equal(result.details.layer_trace[8].layer, "L9");
       assert.match(result.content[0].text, /"allowed": true/);
     }
+  },
+  {
+    name: "normalizes stringly-typed OpenClaw trade tool params before execution",
+    async run() {
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
+      const tool = createOpenClawTradeTool({
+        toolContext: {
+          agentId: "openclaw-operator",
+          sessionKey: "session-typed-strings"
+        },
+        getPipeline: async () => pipeline
+      });
+
+      const result = await tool.execute("tool-call-2", {
+        symbol: "AAPL",
+        side: "BUY",
+        quantity: "10",
+        limit_price: "170",
+        market_hours_open: "true",
+        current_daily_notional_usd: "0",
+        current_portfolio_exposure_usd: "0",
+        prior_trade_count_1m: "0",
+        evidence_sources:
+          '[{"provider":"alpaca","uri":"alpaca://quotes/AAPL"}]',
+        focused_tickers: "AAPL,MSFT"
+      });
+
+      assert.equal(result.details.allowed, true);
+      assert.equal(result.details.execution.simulated, true);
+      assert.equal(result.details.envelope.intent.quantity, 10);
+      assert.equal(result.details.envelope.intent.limit_price, 170);
+      assert.equal(result.details.envelope.state.market_hours_open, true);
+      assert.deepEqual(result.details.envelope.state.focused_tickers, [
+        "AAPL",
+        "MSFT"
+      ]);
+      assert.equal(result.details.envelope.evidence.sources[0].provider, "alpaca");
+    }
   }
 ];
 

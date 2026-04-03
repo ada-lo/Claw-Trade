@@ -150,7 +150,12 @@
         ]
       },
       huggingface: {
-        apiKey: "${HF_TOKEN}"
+        baseUrl: "https://router.huggingface.co/v1",
+        apiKey: "${HF_TOKEN}",
+        api: "openai-completions",
+        models: [
+          { id: "Qwen/Qwen3-8B", name: "Qwen3 8B" }
+        ] 
       }
     }
   },

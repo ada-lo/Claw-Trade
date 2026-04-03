@@ -16,18 +16,17 @@ const TRADE_TOOL_SCHEMA = {
     },
     side: {
       type: "string",
-      enum: ["buy", "sell"],
-      description: "Order side."
+      description: "Order side, typically buy or sell."
     },
     quantity: {
-      type: "integer",
+      type: ["integer", "string"],
       minimum: 1,
-      description: "Whole-share quantity."
+      description: "Whole-share quantity. String numerals are accepted and normalized."
     },
     limit_price: {
-      type: "number",
+      type: ["number", "string"],
       exclusiveMinimum: 0,
-      description: "Limit price in USD."
+      description: "Limit price in USD. String numerals are accepted and normalized."
     },
     nonce: {
       type: "string",
@@ -38,9 +37,9 @@ const TRADE_TOOL_SCHEMA = {
       description: "Short explanation of why the trade is being proposed."
     },
     evidence_sources: {
-      type: "array",
+      type: ["array", "string"],
       description:
-        "Optional supporting evidence sources. If omitted, the plugin adds an Alpaca quote source and an operator confirmation source.",
+        "Optional supporting evidence sources. If omitted, the plugin adds an Alpaca quote source and an operator confirmation source. A JSON string is also accepted.",
       items: {
         type: "object",
         properties: {
@@ -55,25 +54,25 @@ const TRADE_TOOL_SCHEMA = {
       }
     },
     market_hours_open: {
-      type: "boolean",
-      description: "Override the market-hours state for deterministic checks."
+      type: ["boolean", "string"],
+      description: "Override the market-hours state for deterministic checks. Boolean-like strings are accepted."
     },
     current_daily_notional_usd: {
-      type: "number",
-      description: "Current daily notional already spent before this order."
+      type: ["number", "string"],
+      description: "Current daily notional already spent before this order. String numerals are accepted."
     },
     current_portfolio_exposure_usd: {
-      type: "number",
-      description: "Current portfolio exposure before this order."
+      type: ["number", "string"],
+      description: "Current portfolio exposure before this order. String numerals are accepted."
     },
     prior_trade_count_1m: {
-      type: "integer",
+      type: ["integer", "string"],
       minimum: 0,
-      description: "Observed trade count over the previous minute."
+      description: "Observed trade count over the previous minute. String numerals are accepted."
     },
     focused_tickers: {
-      type: "array",
-      description: "Tickers already in focus for the active strategy context.",
+      type: ["array", "string"],
+      description: "Tickers already in focus for the active strategy context. A comma-separated string is also accepted.",
       items: {
         type: "string"
       }
@@ -102,7 +101,33 @@ function normalizeInteger(value, fallback = 0) {
   return Number.isInteger(parsed) ? parsed : Math.trunc(parsed);
 }
 
+function normalizeBoolean(value, fallback = true) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "y", "open"].includes(normalized)) {
+      return true;
+    }
+
+    if (["false", "0", "no", "n", "closed"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return fallback;
+}
+
 function asStringArray(value) {
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
   if (!Array.isArray(value)) {
     return [];
   }
@@ -113,8 +138,17 @@ function asStringArray(value) {
 }
 
 function normalizeEvidenceSources(rawSources, { ticker, actorId }) {
-  const provided = Array.isArray(rawSources)
-    ? rawSources
+  let normalizedRawSources = rawSources;
+  if (typeof normalizedRawSources === "string" && normalizedRawSources.trim() !== "") {
+    try {
+      normalizedRawSources = JSON.parse(normalizedRawSources);
+    } catch {
+      normalizedRawSources = [];
+    }
+  }
+
+  const provided = Array.isArray(normalizedRawSources)
+    ? normalizedRawSources
         .filter((entry) => entry && typeof entry === "object")
         .map((entry) => ({
           provider: String(entry.provider ?? "").trim(),
@@ -230,10 +264,10 @@ function mapToolEventToEnvelope(event, toolContext = {}) {
       })
     },
     state: {
-      market_hours_open:
-        typeof args.market_hours_open === "boolean"
-          ? args.market_hours_open
-          : event.state?.market_hours_open ?? true,
+      market_hours_open: normalizeBoolean(
+        args.market_hours_open ?? event.state?.market_hours_open,
+        true
+      ),
       current_daily_notional_usd: normalizeNumber(
         args.current_daily_notional_usd ??
           args.daily_spent ??
