@@ -3,7 +3,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createPipeline } from "../src/index.js";
+import { createOpenClawTradeTool, createPipeline } from "../src/index.js";
 import {
   buildAllowedTradeEnvelope,
   buildOversizedTradeEnvelope,
@@ -152,6 +152,38 @@ const cases = [
       assert.equal(result.allowed, false);
       assert.equal(result.blocked_by, "formal_verifier");
       assert.match(result.reasons[0], /Formal verifier HTTP request failed/);
+    }
+  },
+  {
+    name: "routes OpenClaw alpaca.place_order through the ArmorClaw tool wrapper",
+    async run() {
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
+      const tool = createOpenClawTradeTool({
+        toolContext: {
+          agentId: "openclaw-operator",
+          sessionKey: "session-123"
+        },
+        getPipeline: async () => pipeline
+      });
+
+      const result = await tool.execute("tool-call-1", {
+        symbol: "AAPL",
+        side: "buy",
+        quantity: 10,
+        limit_price: 170,
+        current_daily_notional_usd: 0
+      });
+
+      assert.equal(result.details.allowed, true);
+      assert.equal(result.details.execution.simulated, true);
+      assert.equal(result.details.layer_trace[0].layer, "L1");
+      assert.equal(result.details.layer_trace[8].layer, "L9");
+      assert.match(result.content[0].text, /"allowed": true/);
     }
   }
 ];

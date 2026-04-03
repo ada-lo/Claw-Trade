@@ -2,10 +2,13 @@ FROM node:24-alpine
 WORKDIR /app
 RUN npm install -g openclaw@latest
 RUN cd /usr/local/lib/node_modules/openclaw && npm install grammy @grammyjs/runner @grammyjs/transformer-throttler @grammyjs/parse-mode @grammyjs/menu --save
-RUN mkdir -p /root/.openclaw /app/runtime/audit /app/runtime/keys /app/runtime/state && (openclaw config set gateway.bind lan || true)
+RUN mkdir -p /root/.openclaw /app/runtime/audit /app/runtime/keys /app/runtime/state /opt/claw-trade/plugins
 COPY package*.json ./
 RUN npm install
 COPY . .
+COPY openclaw-plugin/armorclaw-financial-guard /opt/claw-trade/plugins/armorclaw-financial-guard
 COPY openclaw.json5 /root/.openclaw/openclaw.json5
-RUN chmod +x scripts/setup-agents.sh && sh scripts/setup-agents.sh
+RUN chmod 755 /opt/claw-trade /opt/claw-trade/plugins /opt/claw-trade/plugins/armorclaw-financial-guard && chmod 644 /opt/claw-trade/plugins/armorclaw-financial-guard/*
+RUN chmod +x scripts/setup-agents.sh scripts/openclaw-entrypoint.sh && sh scripts/setup-agents.sh
 RUN npm run generate:keys 2>/dev/null || true
+ENTRYPOINT ["/app/scripts/openclaw-entrypoint.sh"]

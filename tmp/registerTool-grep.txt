@@ -1,0 +1,41 @@
+/usr/local/lib/node_modules/openclaw/dist/plugin-sdk/src/plugins/registry.d.ts:192:    registerTool: (record: PluginRecord, tool: AnyAgentTool | OpenClawPluginToolFactory, opts?: {
+/usr/local/lib/node_modules/openclaw/dist/plugin-sdk/src/plugins/types.d.ts:1690:    registerTool: (tool: AnyAgentTool | OpenClawPluginToolFactory, opts?: OpenClawPluginToolOptions) => void;
+/usr/local/lib/node_modules/openclaw/dist/plugin-sdk/src/plugins/api-builder.d.ts:17:    handlers?: Partial<Pick<OpenClawPluginApi, "registerTool" | "registerHook" | "registerHttpRoute" | "registerChannel" | "registerGatewayMethod" | "registerCli" | "registerService" | "registerCliBackend" | "registerProvider" | "registerSpeechProvider" | "registerMediaUnderstandingProvider" | "registerImageGenerationProvider" | "registerWebFetchProvider" | "registerWebSearchProvider" | "registerInteractiveHandler" | "onConversationBindingResolved" | "registerCommand" | "registerContextEngine" | "registerMemoryPromptSection" | "registerMemoryFlushPlan" | "registerMemoryRuntime" | "registerMemoryEmbeddingProvider" | "on">>;
+/usr/local/lib/node_modules/openclaw/dist/plugin-sdk/src/gateway/server-methods/types.d.ts:79:    registerToolEventRecipient: (runId: string, connId: string) => void;
+/usr/local/lib/node_modules/openclaw/dist/web-search-providers.shared-CiXeJJJg.js:93:				registerTool(tool) {
+/usr/local/lib/node_modules/openclaw/dist/api-builder-DJbipBVf.js:39:		registerTool: handlers.registerTool ?? noopRegisterTool,
+/usr/local/lib/node_modules/openclaw/dist/extensions/zalouser/index.js:595:		api.registerTool((ctx) => createZalouserTool(ctx), { name: "zalouser" });
+/usr/local/lib/node_modules/openclaw/dist/extensions/diffs/index.js:17890:		api.registerTool((ctx) => createDiffsTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/tavily/index.js:123:		api.registerTool(createTavilySearchTool(api));
+/usr/local/lib/node_modules/openclaw/dist/extensions/tavily/index.js:124:		api.registerTool(createTavilyExtractTool(api));
+/usr/local/lib/node_modules/openclaw/dist/extensions/firecrawl/index.js:179:		api.registerTool(createFirecrawlSearchTool(api));
+/usr/local/lib/node_modules/openclaw/dist/extensions/firecrawl/index.js:180:		api.registerTool(createFirecrawlScrapeTool(api));
+/usr/local/lib/node_modules/openclaw/dist/extensions/voice-call/index.js:580:		api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/lobster/index.js:225:		api.registerTool(((ctx) => {
+/usr/local/lib/node_modules/openclaw/dist/extensions/memory-core/index.js:422:		api.registerTool((ctx) => createMemorySearchTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/memory-core/index.js:426:		api.registerTool((ctx) => createMemoryGetTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/browser/index.js:9:		api.registerTool(((ctx) => createBrowserTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/xai/index.js:111:		api.registerTool((ctx) => createCodeExecutionTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/xai/index.js:115:		api.registerTool((ctx) => createXSearchTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/memory-lancedb/index.js:6830:		api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/memory-lancedb/index.js:6869:		api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/memory-lancedb/index.js:6914:		api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/tlon/index.js:106:		api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/qqbot/index.js:87:	api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/qqbot/index.js:343:	api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/extensions/feishu/index.js:411:		api.registerTool((ctx) => ({
+/usr/local/lib/node_modules/openclaw/dist/extensions/feishu/index.js:1895:		api.registerTool((ctx) => {
+/usr/local/lib/node_modules/openclaw/dist/extensions/feishu/index.js:1942:		api.registerTool((ctx) => ({
+/usr/local/lib/node_modules/openclaw/dist/extensions/feishu/index.js:2068:	api.registerTool((ctx) => {
+/usr/local/lib/node_modules/openclaw/dist/extensions/feishu/index.js:2470:	api.registerTool((ctx) => {
+/usr/local/lib/node_modules/openclaw/dist/extensions/llm-task/index.js:152:		api.registerTool(createLlmTaskTool(api), { optional: true });
+/usr/local/lib/node_modules/openclaw/dist/loader-BkOjign1.js:550:	const registerTool = (record, tool, opts) => {
+/usr/local/lib/node_modules/openclaw/dist/loader-BkOjign1.js:1113:					registerTool: (tool, opts) => registerTool(record, tool, opts),
+/usr/local/lib/node_modules/openclaw/dist/loader-BkOjign1.js:1263:		registerTool,
+/usr/local/lib/node_modules/openclaw/dist/media-Db1jTPI3.js:634:	api.registerTool((ctx) => {
+/usr/local/lib/node_modules/openclaw/dist/reactions-Mn4in08V.js:141:	api.registerTool({
+/usr/local/lib/node_modules/openclaw/dist/gateway-cli-CWpalJNJ.js:10291:			context.registerToolEventRecipient(runId, connId);
+/usr/local/lib/node_modules/openclaw/dist/gateway-cli-CWpalJNJ.js:10292:			for (const [activeRunId, active] of context.chatAbortControllers) if (activeRunId !== runId && active.sessionKey === requestedSessionKey) context.registerToolEventRecipient(activeRunId, connId);
+/usr/local/lib/node_modules/openclaw/dist/gateway-cli-CWpalJNJ.js:12778:							context.registerToolEventRecipient(runId, connId);
+/usr/local/lib/node_modules/openclaw/dist/gateway-cli-CWpalJNJ.js:12779:							for (const [activeRunId, active] of context.chatAbortControllers) if (activeRunId !== runId && active.sessionKey === p.sessionKey) context.registerToolEventRecipient(activeRunId, connId);
+/usr/local/lib/node_modules/openclaw/dist/gateway-cli-CWpalJNJ.js:28481:			registerToolEventRecipient: toolEventRecipients.add,

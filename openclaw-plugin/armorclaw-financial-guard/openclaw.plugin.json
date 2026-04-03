@@ -1,0 +1,10 @@
+{
+  "id": "armorclaw-financial-guard",
+  "name": "ArmorClaw Financial Guard",
+  "description": "Registers the guarded alpaca.place_order tool for the Claw-Trade ArmorClaw pipeline.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

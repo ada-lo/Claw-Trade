@@ -13,6 +13,17 @@
     }
   },
 
+  plugins: {
+    load: {
+      paths: ["/opt/claw-trade/plugins/armorclaw-financial-guard"]
+    },
+    entries: {
+      "armorclaw-financial-guard": {
+        enabled: true
+      }
+    }
+  },
+
   // Global fallback defaults
   agents: {
     defaults: {

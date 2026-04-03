@@ -53,7 +53,10 @@ HTTP client for the Z3 verifier microservice.
 FastAPI service that exposes `/health` and `/verify`.
 
 - [src/openclaw/plugin.js](/d:/PROJECTSSS/Claw-Trade/src/openclaw/plugin.js)
-OpenClaw-facing adapter for tool-call interception.
+OpenClaw-facing adapter that exposes the guarded `alpaca.place_order` tool and maps tool params into ArmorClaw intent envelopes.
+
+- [openclaw-plugin/armorclaw-financial-guard/index.mjs](/d:/PROJECTSSS/Claw-Trade/openclaw-plugin/armorclaw-financial-guard/index.mjs)
+Native OpenClaw plugin entry that registers the guarded trading tool with the gateway runtime.
 
 - [src/demo.js](/d:/PROJECTSSS/Claw-Trade/src/demo.js)
 Local demo entrypoint that prints a layer-by-layer pipeline trace.
@@ -97,6 +100,8 @@ node src/server.js
 ```
 
 The gateway starts only when you explicitly run it.
+
+When the gateway loads, the `armorclaw-financial-guard` plugin registers `alpaca.place_order` as an OpenClaw tool. That tool does not send orders directly. It always routes the request through the Claw-Trade pipeline first, then reaches the dry-run or paper execution proxy only if all layers pass.
 
 ## Check That Everything Works
 
