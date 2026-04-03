@@ -39,8 +39,9 @@ Those belong to the external sandbox boundary and host deployment.
 ## Paper Mode Checklist
 
 1. Generate Ed25519 keys with `npm run generate:keys`.
-2. Install Python `z3-solver` for strict formal verification.
+2. Start the Z3 verifier through Docker Compose and confirm `http://localhost:5001/health` returns `ok`.
 3. Set Alpaca credentials in environment variables only.
-4. Keep Alpaca on the paper endpoint.
+4. Keep `ALPACA_BASE_URL=https://paper-api.alpaca.markets`.
 5. Confirm OpenClaw trade skills call the proxy instead of the broker directly.
-6. Review [policies/financial-guardrails.json](/d:/PROJECTSSS/Claw-Trade/policies/financial-guardrails.json) and tighten ticker/risk limits before demos.
+6. Confirm successful paper execution via the audit log with `execution.broker: "alpaca-paper"`.
+7. Review [policies/financial-guardrails.json](/d:/PROJECTSSS/Claw-Trade/policies/financial-guardrails.json) and tighten ticker/risk limits before demos.

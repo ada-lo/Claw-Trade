@@ -52,3 +52,14 @@ Trade intents are submitted as a structured envelope:
 - It carries source provenance for the data-trust layer.
 - It carries enough state for exposure, rate, and market-hours checks.
 - It gives the signer and audit log a stable object to hash and prove later.
+
+## OpenClaw Tool Input Notes
+
+The OpenClaw `alpaca.place_order` tool accepts model-emitted parameters before they are mapped into this envelope. The plugin normalizes common LLM formatting issues such as:
+
+- numeric fields emitted as strings
+- boolean fields emitted as `"true"` or `"false"`
+- comma-separated ticker lists
+- JSON-string evidence arrays
+
+That normalization happens in `src/openclaw/plugin.js` before ArmorClaw policy and formal verification run.

@@ -4,8 +4,10 @@
 
 The repo assumes this boundary:
 
-- OpenClaw runtime boundary: sandboxed reasoning layer configured via `openclaw.json5`
+- OpenClaw runtime boundary: reasoning/runtime layer configured via `openclaw.json5`
 - Inside this repo: deterministic enforcement, signing, proxying, and audit
+
+In the current Dockerized runtime, OpenClaw agent sandboxing is configured with `sandbox.mode: "off"` because nested Docker is not available inside the container. The Claw-Trade pipeline still treats all model output as untrusted and re-validates it deterministically before any execution attempt.
 
 ## Flow
 
@@ -40,3 +42,4 @@ flowchart LR
 - Fail closed if keys are missing in paper mode
 - Fail closed if the signer or nonce checks fail
 - Fail closed if the trade exceeds formal or policy limits
+- Fail closed if Alpaca paper rejects the order or credentials
