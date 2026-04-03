@@ -1,7 +1,7 @@
 FROM node:24-alpine
 WORKDIR /app
 RUN npm install -g openclaw@latest
-RUN cd /usr/local/lib/node_modules/openclaw && npm install grammy @grammyjs/runner @grammyjs/transformer-throttler @grammyjs/parse-mode @grammyjs/menu @slack/web-api @larksuiteoapi/node-sdk @buape/carbon --save
+RUN cd /usr/local/lib/node_modules/openclaw && npm install grammy @grammyjs/runner @grammyjs/transformer-throttler @grammyjs/parse-mode @grammyjs/menu @slack/web-api @slack/bolt @larksuiteoapi/node-sdk @buape/carbon --save
 RUN mkdir -p /root/.openclaw /app/runtime/audit /app/runtime/keys /app/runtime/state /opt/claw-trade/plugins
 COPY package*.json ./
 RUN npm install

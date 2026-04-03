@@ -4,6 +4,8 @@ runtime/audit/*.jsonl
 runtime/state/*.json
 node_modules/
 .agents/
+tmp/
+tmp_diff.txt
 *.bak
 *.log
 __pycache__/
