@@ -22,10 +22,10 @@ services:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - HF_TOKEN=${HF_TOKEN}
       - HUGGINGFACE_HUB_TOKEN=${HF_TOKEN}
-      - EXECUTION_MODE=${EXECUTION_MODE}
-      - FORMAL_VERIFY_MODE=${FORMAL_VERIFY_MODE}
+      - EXECUTION_MODE=${EXECUTION_FORMAL_VERIFY_MODE}
       - Z3_VERIFIER_URL=${Z3_VERIFIER_URL}
-      - NODE_OPTIONS=--max-old-space-size=512
+      - MODE}
+      - FORMAL_VERIFY_MODE=${NODE_OPTIONS=--max-old-space-size=512
     mem_limit: 1g
     security_opt:
       - no-new-privileges:true
