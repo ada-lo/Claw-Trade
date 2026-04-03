@@ -1,164 +1,125 @@
-import { spawn } from "node:child_process";
-import { resolve } from "node:path";
-
-function verifyWithJs(envelope, policy, context = {}) {
-  const intent = envelope.intent;
+function buildVerifierRequest(envelope, policy) {
+  const intent = envelope.intent ?? {};
   const state = envelope.state ?? {};
   const riskLimits = policy.risk_limits ?? {};
   const market = policy.market ?? {};
-  const reasons = [];
-  const orderNotional = intent.notional_usd ?? intent.quantity * intent.limit_price;
-  const dailyAfter = (state.current_daily_notional_usd ?? 0) + orderNotional;
-  const exposureAfter = (state.current_portfolio_exposure_usd ?? 0) + orderNotional;
-
-  if (orderNotional > (riskLimits.max_single_order_notional_usd ?? 0)) {
-    reasons.push("single_order_limit");
-  }
-
-  if (dailyAfter > (riskLimits.max_daily_notional_usd ?? 0)) {
-    reasons.push("daily_limit");
-  }
-
-  if (exposureAfter > (riskLimits.max_portfolio_exposure_usd ?? 0)) {
-    reasons.push("portfolio_exposure_limit");
-  }
-
-  if (intent.quantity > (riskLimits.max_shares_per_order ?? 0)) {
-    reasons.push("share_limit");
-  }
-
-  if (!asSet(market.allowed_tickers).has(intent.ticker)) {
-    reasons.push("ticker_allowlist");
-  }
-
-  if (!asSet(market.allowed_asset_classes).has(intent.asset_class)) {
-    reasons.push("asset_class_allowlist");
-  }
-
-  if (market.market_hours_only && state.market_hours_open !== true) {
-    reasons.push("market_session_gate");
-  }
-
-  if (reasons.length > 0) {
-    return {
-      allowed: false,
-      code: "js_unsat",
-      reasons: [
-        "formal verification rejected the proposed action"
-      ],
-      unsat_core: reasons,
-      fallback_reason: context.fallbackReason ?? null
-    };
-  }
 
   return {
-    allowed: true,
-    summary: {
-      order_notional_usd: orderNotional,
-      daily_notional_after_usd: dailyAfter,
-      portfolio_exposure_after_usd: exposureAfter
-    },
-    fallback_reason: context.fallbackReason ?? null
+    action: intent.action,
+    ticker: intent.ticker,
+    quantity: intent.quantity,
+    limit_price: Number(intent.limit_price),
+    daily_spent: Number(state.current_daily_notional_usd ?? 0),
+    daily_limit: Number(riskLimits.max_daily_notional_usd ?? 0),
+    allowed_tickers: market.allowed_tickers ?? []
   };
-}
-
-function asSet(values) {
-  return new Set((values ?? []).map((value) => String(value)));
 }
 
 export class FormalVerifier {
   constructor({
     mode = "strict",
-    pythonPath = "python",
-    scriptPath = resolve(process.cwd(), "python/formal_verify.py")
+    url,
+    fetchImpl = globalThis.fetch
   } = {}) {
     this.mode = mode;
-    this.pythonPath = pythonPath;
-    this.scriptPath = scriptPath;
+    this.url = url;
+    this.fetchImpl = fetchImpl;
   }
 
   async verify(envelope, policy) {
-    if (this.mode === "js") {
-      return verifyWithJs(envelope, policy);
+    const request = buildVerifierRequest(envelope, policy);
+
+    if (!this.url) {
+      return {
+        allowed: false,
+        code: "formal_verifier_unavailable",
+        reasons: ["Z3_VERIFIER_URL is not configured."]
+      };
     }
 
-    const pythonResult = await this.#runPython({ envelope, policy });
-    if (pythonResult.ok) {
-      return pythonResult.payload;
+    if (typeof this.fetchImpl !== "function") {
+      return {
+        allowed: false,
+        code: "formal_verifier_unavailable",
+        reasons: ["HTTP fetch is unavailable for the formal verifier."]
+      };
     }
 
-    if (this.mode === "fallback") {
-      return verifyWithJs(envelope, policy, {
-        fallbackReason: pythonResult.error
+    let response;
+    try {
+      response = await this.fetchImpl(`${this.url.replace(/\/+$/u, "")}/verify`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(request),
+        signal: AbortSignal.timeout(5000)
       });
+    } catch (error) {
+      return {
+        allowed: false,
+        code: "formal_verifier_unavailable",
+        reasons: [`Formal verifier HTTP request failed: ${error.message}`]
+      };
     }
 
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      return {
+        allowed: false,
+        code: "formal_verifier_unavailable",
+        reasons: [`Formal verifier returned invalid JSON: ${error.message}`]
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        allowed: false,
+        code: "formal_verifier_unavailable",
+        reasons: [
+          `Formal verifier returned HTTP ${response.status}: ${payload.reason ?? "unknown error"}`
+        ]
+      };
+    }
+
+    if (typeof payload.allowed !== "boolean") {
+      return {
+        allowed: false,
+        code: "formal_verifier_unavailable",
+        reasons: ["Formal verifier response is missing the allowed boolean."]
+      };
+    }
+
+    const reason = payload.reason ?? (
+      payload.allowed
+        ? "SAT: intent satisfies all policy constraints"
+        : "UNSAT: formal verifier rejected the proposed action"
+    );
+
+    if (!payload.allowed) {
+      return {
+        allowed: false,
+        code: "unsat",
+        reason,
+        reasons: [reason],
+        unsat_core: [reason],
+        request
+      };
+    }
+
+    const orderNotional = Number(request.quantity) * Number(request.limit_price);
     return {
-      allowed: false,
-      code: "formal_verifier_unavailable",
-      reasons: [pythonResult.error]
+      allowed: true,
+      reason,
+      summary: {
+        order_notional_usd: orderNotional,
+        daily_spent_usd: request.daily_spent,
+        daily_limit_usd: request.daily_limit,
+        daily_notional_after_usd: request.daily_spent + orderNotional
+      },
+      request
     };
-  }
-
-  #runPython(payload) {
-    return new Promise((resolvePromise) => {
-      let child;
-      try {
-        child = spawn(this.pythonPath, [this.scriptPath], {
-          stdio: ["pipe", "pipe", "pipe"]
-        });
-      } catch (error) {
-        resolvePromise({
-          ok: false,
-          error: `unable to launch formal verifier: ${error.message}`
-        });
-        return;
-      }
-
-      let stdout = "";
-      let stderr = "";
-
-      child.stdout.on("data", (chunk) => {
-        stdout += chunk.toString();
-      });
-
-      child.stderr.on("data", (chunk) => {
-        stderr += chunk.toString();
-      });
-
-      child.on("error", (error) => {
-        resolvePromise({
-          ok: false,
-          error: `unable to launch formal verifier: ${error.message}`
-        });
-      });
-
-      child.on("close", (code) => {
-        if (!stdout.trim()) {
-          resolvePromise({
-            ok: false,
-            error: stderr.trim() || `formal verifier exited with code ${code}`
-          });
-          return;
-        }
-
-        try {
-          const parsed = JSON.parse(stdout);
-          resolvePromise({
-            ok: true,
-            payload: parsed
-          });
-        } catch (error) {
-          resolvePromise({
-            ok: false,
-            error:
-              stderr.trim() ||
-              `formal verifier returned invalid JSON: ${error.message}`
-          });
-        }
-      });
-
-      child.stdin.end(JSON.stringify(payload));
-    });
   }
 }

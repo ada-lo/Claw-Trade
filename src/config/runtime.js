@@ -6,7 +6,8 @@ export function createRuntimeConfig(overrides = {}) {
   return {
     executionMode: env.EXECUTION_MODE ?? "dry-run",
     formalVerifyMode: env.FORMAL_VERIFY_MODE ?? "strict",
-    formalVerifyPython: env.FORMAL_VERIFY_PYTHON ?? "python",
+    z3VerifierUrl: env.Z3_VERIFIER_URL ?? "http://z3_verifier:5001",
+    verifierFetch: overrides.fetchImpl ?? globalThis.fetch,
     policyPath: resolve(
       process.cwd(),
       env.POLICY_PATH ?? "./policies/financial-guardrails.json"

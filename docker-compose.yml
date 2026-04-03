@@ -11,12 +11,13 @@ services:
       - openclaw_config:/root/.openclaw
       - ./openclaw.json5:/root/.openclaw/openclaw.json5:ro
     ports:
-      - "127.0.0.1:18789:18789"
-      - "127.0.0.1:1933:1933"
-      - "127.0.0.1:8020:8020"
+      - "18789:18789"
+      - "1933:1933"
+      - "8020:8020"
     env_file:
       - .env
     environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - HF_TOKEN=${HF_TOKEN}
@@ -24,6 +25,8 @@ services:
       - EXECUTION_MODE=${EXECUTION_MODE}
       - FORMAL_VERIFY_MODE=${FORMAL_VERIFY_MODE}
       - Z3_VERIFIER_URL=${Z3_VERIFIER_URL}
+      - NODE_OPTIONS=--max-old-space-size=512
+    mem_limit: 1g
     security_opt:
       - no-new-privileges:true
     command: node src/server.js
@@ -41,16 +44,17 @@ services:
     command: >
       sh -c "pip install z3-solver fastapi uvicorn --quiet &&
              uvicorn python.formal_verify:app --host 0.0.0.0 --port 5001"
-    expose:
-      - "5001"
+    ports:
+      - "5001:5001"
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
 volumes:
   openclaw_modules:

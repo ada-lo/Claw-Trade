@@ -39,12 +39,12 @@ export function buildAllowedTradeEnvelope(overrides = {}) {
       ticker: "AAPL",
       asset_class: "us_equity",
       quantity: 10,
-      limit_price: 150
+      limit_price: 170
     },
     context: {
       channel: "openclaw",
       raw_inputs: [
-        "Buy 10 shares of AAPL if the price is below 150 and the risk policy allows it."
+        "Buy 10 shares of AAPL at 170 if the risk policy allows it."
       ]
     },
     evidence: {
@@ -76,13 +76,13 @@ export function buildOversizedTradeEnvelope(overrides = {}) {
     mergeEnvelope(
       {
         intent: {
-          ticker: "NVDA",
-          quantity: 50,
+          ticker: "AAPL",
+          quantity: 100,
           limit_price: 170
         },
         state: {
-          current_daily_notional_usd: 1700,
-          current_portfolio_exposure_usd: 1700
+          current_daily_notional_usd: 9000,
+          current_portfolio_exposure_usd: 9000
         }
       },
       overrides

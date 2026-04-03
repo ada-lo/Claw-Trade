@@ -21,6 +21,16 @@ function blockedDecision(stage, reasons, details = {}) {
   };
 }
 
+function traceEntry(layer, name, status, detail = null, extra = {}) {
+  return {
+    layer,
+    name,
+    status,
+    detail,
+    ...extra
+  };
+}
+
 export class ArmorClawPipeline {
   constructor({
     policy,
@@ -33,7 +43,8 @@ export class ArmorClawPipeline {
     this.dataTrust = new DataTrustLayer(policy);
     this.formalVerifier = new FormalVerifier({
       mode: config.formalVerifyMode,
-      pythonPath: config.formalVerifyPython
+      url: config.z3VerifierUrl,
+      fetchImpl: config.verifierFetch
     });
     this.policyEngine = new PolicyEngine(policy);
     this.behaviorMonitor = new BehavioralMonitor(policy, this.clock);
@@ -60,51 +71,121 @@ export class ArmorClawPipeline {
   }
 
   async evaluateIntent(envelope) {
-    const schemaDecision = validateIntentEnvelope(envelope);
-    if (!schemaDecision.valid) {
-      return blockedDecision("intent_schema", schemaDecision.errors);
-    }
+    const layerTrace = [];
 
-    const trustedDecision = this.dataTrust.evaluate(schemaDecision.envelope);
+    const trustedDecision = this.dataTrust.evaluate(envelope);
     if (!trustedDecision.allowed) {
+      layerTrace.push(
+        traceEntry("L1", "DataTrust", "BLOCKED", trustedDecision.reasons.join(" "))
+      );
       return blockedDecision("data_trust", trustedDecision.reasons, {
-        envelope: trustedDecision.sanitized_envelope
+        envelope: trustedDecision.sanitized_envelope,
+        layer_trace: layerTrace
       });
     }
 
-    const trustedEnvelope = trustedDecision.sanitized_envelope;
+    layerTrace.push(
+      traceEntry(
+        "L1",
+        "DataTrust",
+        "PASS",
+        `${trustedDecision.trusted_sources_count} trusted source(s)`
+      )
+    );
+    layerTrace.push(traceEntry("L2", "Sandbox", "PASS", "external"));
+
+    const schemaDecision = validateIntentEnvelope(trustedDecision.sanitized_envelope);
+    if (!schemaDecision.valid) {
+      layerTrace.push(
+        traceEntry("L3", "Schema", "BLOCKED", schemaDecision.errors.join(" "))
+      );
+      return blockedDecision("intent_schema", schemaDecision.errors, {
+        envelope: schemaDecision.envelope,
+        layer_trace: layerTrace
+      });
+    }
+
+    layerTrace.push(traceEntry("L3", "Schema", "PASS"));
+    const trustedEnvelope = schemaDecision.envelope;
 
     const formalDecision = await this.formalVerifier.verify(
       trustedEnvelope,
       this.policy
     );
     if (!formalDecision.allowed) {
+      layerTrace.push(
+        traceEntry(
+          "L4",
+          "Z3 Verifier",
+          "BLOCKED",
+          (formalDecision.reasons ?? ["formal verification failed"]).join(" ")
+        )
+      );
       return blockedDecision(
         "formal_verifier",
         formalDecision.reasons ?? ["formal verification failed"],
         {
-          unsat_core: formalDecision.unsat_core ?? []
+          unsat_core: formalDecision.unsat_core ?? [],
+          layer_trace: layerTrace
         }
       );
     }
 
+    layerTrace.push(
+      traceEntry(
+        "L4",
+        "Z3 Verifier",
+        "PASS",
+        formalDecision.reason ?? "SAT: intent satisfies all policy constraints"
+      )
+    );
+
     const policyDecision = this.policyEngine.evaluate(trustedEnvelope);
     if (!policyDecision.allowed) {
+      layerTrace.push(
+        traceEntry(
+          "L5",
+          "ArmorClaw",
+          "BLOCKED",
+          policyDecision.violations.map((violation) => violation.message).join(" ")
+        )
+      );
       return blockedDecision(
         "policy_engine",
         policyDecision.violations.map((violation) => violation.message),
         {
-          violations: policyDecision.violations
+          violations: policyDecision.violations,
+          layer_trace: layerTrace
         }
       );
     }
 
+    layerTrace.push(traceEntry("L5", "ArmorClaw", "PASS"));
+
     const behaviorDecision = this.behaviorMonitor.evaluate(trustedEnvelope);
     if (!behaviorDecision.allowed) {
+      layerTrace.push(
+        traceEntry(
+          "L6",
+          "BehaviorMonitor",
+          "BLOCKED",
+          behaviorDecision.reasons.join(" ")
+        )
+      );
       return blockedDecision("behavior_monitor", behaviorDecision.reasons, {
-        behavior_snapshot: behaviorDecision.snapshot
+        behavior_snapshot: behaviorDecision.snapshot,
+        layer_trace: layerTrace
       });
     }
+
+    layerTrace.push(
+      traceEntry(
+        "L6",
+        "BehaviorMonitor",
+        "PASS",
+        `recent_calls=${behaviorDecision.snapshot.recent_call_count}`
+      )
+    );
 
     const signedIntent = this.signer.sign({
       approved_at: this.clock().toISOString(),
@@ -117,10 +198,12 @@ export class ArmorClawPipeline {
       }
     });
 
+    layerTrace.push(traceEntry("L7", "IntentSigner", "SIGNED"));
     return {
       allowed: true,
       envelope: trustedEnvelope,
-      signed_intent: signedIntent
+      signed_intent: signedIntent,
+      layer_trace: layerTrace
     };
   }
 
@@ -139,9 +222,14 @@ export class ArmorClawPipeline {
     const evaluation = await this.evaluateIntent(envelope);
     if (!evaluation.allowed) {
       const auditRecord = await this.auditDecision(evaluation, envelope);
+      const layerTrace = [
+        ...(evaluation.layer_trace ?? []),
+        traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`)
+      ];
       return {
         ...evaluation,
-        audit_record: auditRecord
+        audit_record: auditRecord,
+        layer_trace: layerTrace
       };
     }
 
@@ -149,27 +237,52 @@ export class ArmorClawPipeline {
       evaluation.signed_intent
     );
     if (!executionDecision.allowed) {
+      const executionTrace = [
+        ...(evaluation.layer_trace ?? []),
+        traceEntry(
+          "L8",
+          "ExecutionProxy",
+          "BLOCKED",
+          executionDecision.reasons.join(" ")
+        )
+      ];
       const blockedExecution = {
         ...evaluation,
         ...executionDecision,
-        allowed: false
+        allowed: false,
+        layer_trace: executionTrace
       };
       const auditRecord = await this.auditDecision(blockedExecution, evaluation.envelope);
+      const finalTrace = [
+        ...executionTrace,
+        traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`)
+      ];
       return {
         ...blockedExecution,
-        audit_record: auditRecord
+        audit_record: auditRecord,
+        layer_trace: finalTrace
       };
     }
 
     this.behaviorMonitor.record(evaluation.envelope);
+    const executionTrace = [
+      ...(evaluation.layer_trace ?? []),
+      traceEntry("L8", "ExecutionProxy", "DRY-RUN", "no real order sent")
+    ];
     const finalDecision = {
       ...evaluation,
-      execution: executionDecision.execution
+      execution: executionDecision.execution,
+      layer_trace: executionTrace
     };
     const auditRecord = await this.auditDecision(finalDecision, evaluation.envelope);
+    const finalTrace = [
+      ...executionTrace,
+      traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`)
+    ];
     return {
       ...finalDecision,
-      audit_record: auditRecord
+      audit_record: auditRecord,
+      layer_trace: finalTrace
     };
   }
 }

@@ -10,13 +10,25 @@ import {
   buildSuspiciousInputEnvelope
 } from "../src/demo-scenarios.js";
 
-async function createTestPipeline() {
+function createFetchResponse(payload, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    async json() {
+      return payload;
+    }
+  };
+}
+
+async function createTestPipeline(fetchImpl) {
   const tempRoot = await mkdtemp(join(tmpdir(), "claw-trade-"));
   const pipeline = await createPipeline({
     EXECUTION_MODE: "dry-run",
-    FORMAL_VERIFY_MODE: "js",
+    FORMAL_VERIFY_MODE: "strict",
+    Z3_VERIFIER_URL: "http://verifier.test",
     AUDIT_LOG_PATH: join(tempRoot, "audit", "events.jsonl"),
-    NONCE_STORE_PATH: join(tempRoot, "state", "nonces.json")
+    NONCE_STORE_PATH: join(tempRoot, "state", "nonces.json"),
+    fetchImpl
   });
 
   return { pipeline, tempRoot };
@@ -26,11 +38,17 @@ const cases = [
   {
     name: "allows an in-policy paper-trade intent in dry-run mode",
     async run() {
-      const { pipeline, tempRoot } = await createTestPipeline();
+      const { pipeline, tempRoot } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
       const result = await pipeline.processIntent(buildAllowedTradeEnvelope());
 
       assert.equal(result.allowed, true);
       assert.equal(result.execution.simulated, true);
+      assert.equal(result.layer_trace[3].status, "PASS");
 
       const auditContents = await readFile(
         join(tempRoot, "audit", "events.jsonl"),
@@ -42,21 +60,28 @@ const cases = [
   {
     name: "blocks oversized trade attempts before execution",
     async run() {
-      const { pipeline } = await createTestPipeline();
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: false,
+          reason: "UNSAT: trade would exceed daily limit ($26,000 > $10,000)"
+        })
+      );
       const result = await pipeline.processIntent(buildOversizedTradeEnvelope());
 
       assert.equal(result.allowed, false);
       assert.equal(result.blocked_by, "formal_verifier");
-      assert.match(
-        result.unsat_core.join(","),
-        /single_order_limit|daily_limit|portfolio_exposure_limit/
-      );
+      assert.match(result.unsat_core[0], /exceed daily limit/);
     }
   },
   {
     name: "blocks prompt-injection style inputs in the data-trust layer",
     async run() {
-      const { pipeline } = await createTestPipeline();
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
       const result = await pipeline.processIntent(buildSuspiciousInputEnvelope());
 
       assert.equal(result.allowed, false);
@@ -67,7 +92,12 @@ const cases = [
   {
     name: "blocks replayed signed intents with duplicate nonces",
     async run() {
-      const { pipeline } = await createTestPipeline();
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
       const nonce = "replay-demo-nonce";
 
       const first = await pipeline.processIntent(
@@ -90,7 +120,12 @@ const cases = [
   {
     name: "trips the behavioral monitor on runaway loops",
     async run() {
-      const { pipeline } = await createTestPipeline();
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
       let lastResult = null;
 
       for (let index = 0; index < 6; index += 1) {
@@ -104,6 +139,19 @@ const cases = [
 
       assert.equal(lastResult.allowed, false);
       assert.equal(lastResult.blocked_by, "behavior_monitor");
+    }
+  },
+  {
+    name: "fails closed when the verifier is unreachable",
+    async run() {
+      const { pipeline } = await createTestPipeline(async () => {
+        throw new Error("connect ECONNREFUSED verifier.test:5001");
+      });
+      const result = await pipeline.processIntent(buildAllowedTradeEnvelope());
+
+      assert.equal(result.allowed, false);
+      assert.equal(result.blocked_by, "formal_verifier");
+      assert.match(result.reasons[0], /Formal verifier HTTP request failed/);
     }
   }
 ];
