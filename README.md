@@ -31,6 +31,21 @@ Environment is driven by `.env.example`. The safest defaults are:
 - file-backed Ed25519 keys generated with `npm run generate:keys`
 - Alpaca pointed only at `https://paper-api.alpaca.markets`
 
+## OpenClaw Hardening
+
+The repo now ships an audit-oriented OpenClaw baseline in [openclaw.json5](/d:/PROJECTSSS/Claw-Trade/openclaw.json5):
+
+- Sandbox all agent sessions with Docker and no network by default
+- Disable `web_search`, `web_fetch`, and `browser` globally and on the small-model planner/data/strategy/risk agents
+- Disable elevated tool access and browser evaluation
+- Force loopback gateway binding, disable insecure Control UI auth, and turn off node-browser routing
+- Bind published Docker ports to `127.0.0.1` only and keep the Z3 verifier internal to the Compose network
+- Pin the container OpenClaw install to `2026.4.2` instead of `latest`
+
+This is meant to complement the external LLM sandbox layer, not replace it.
+
+If OpenClaw still reports old flags or old models after you change [openclaw.json5](/d:/PROJECTSSS/Claw-Trade/openclaw.json5), check whether Docker is still serving a stale config from the named `openclaw_config` volume. The compose file bind-mounts the repo config over `/root/.openclaw/openclaw.json5`, but if you want a completely clean state you can recreate the stack and remove that volume once.
+
 ## OpenClaw Integration
 
 Use the plugin adapter in [src/openclaw/plugin.js](/d:/PROJECTSSS/Claw-Trade/src/openclaw/plugin.js). The intended flow is:

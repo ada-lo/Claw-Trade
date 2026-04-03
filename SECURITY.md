@@ -12,6 +12,9 @@ This repo treats the LLM side of the system as untrusted. The only thing it is a
 - Never share `ALPACA_API_SECRET` with OpenClaw prompts, skills, memory files, or the sandbox container.
 - Reject any intent that is missing a nonce, signature, or policy-compliant envelope.
 - Treat suspicious input text, prompt-injection markers, and untrusted sources as hard blocks for trade intents.
+- Keep OpenClaw web tools and browser control disabled for small-model agents unless you intentionally move that capability behind a stronger sandbox boundary.
+- Keep Docker-published gateway and Control UI ports loopback-only unless you have an explicit reverse proxy and `gateway.trustedProxies` configured.
+- Do not keep live provider or brokerage keys in tracked files. If any real credentials were placed in a local `.env`, rotate them before sharing the repo.
 
 ## What This Repo Covers
 

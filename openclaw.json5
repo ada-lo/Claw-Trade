@@ -1,7 +1,83 @@
 {
+  tools: {
+    deny: [
+      "group:web",
+      "web_search",
+      "web_fetch",
+      "browser"
+    ],
+    elevated: {
+      enabled: false
+    },
+    web: {
+      search: {
+        enabled: false
+      },
+      fetch: {
+        enabled: false
+      }
+    },
+    loopDetection: {
+      enabled: true,
+      historySize: 30,
+      warningThreshold: 8,
+      criticalThreshold: 12,
+      globalCircuitBreakerThreshold: 20
+    }
+  },
+
+  browser: {
+    enabled: false,
+    evaluateEnabled: false,
+    ssrfPolicy: {
+      dangerouslyAllowPrivateNetwork: false
+    }
+  },
+
+  gateway: {
+    mode: "local",
+    bind: "loopback",
+    trustedProxies: ["127.0.0.1", "::1"],
+    allowRealIpFallback: false,
+    controlUi: {
+      enabled: true,
+      basePath: "/openclaw",
+      allowInsecureAuth: false,
+      dangerouslyDisableDeviceAuth: false,
+      dangerouslyAllowHostHeaderOriginFallback: false
+    },
+    tools: {
+      deny: ["browser"]
+    },
+    nodes: {
+      browser: {
+        mode: "off"
+      },
+      denyCommands: []
+    }
+  },
+
   // Global fallback defaults
   agents: {
     defaults: {
+      sandbox: {
+        mode: "all",
+        backend: "docker",
+        scope: "agent",
+        workspaceAccess: "ro",
+        docker: {
+          readOnlyRoot: true,
+          network: "none",
+          capDrop: ["ALL"],
+          pidsLimit: 256,
+          memory: "1g",
+          memorySwap: "2g",
+          cpus: 1
+        },
+        browser: {
+          enabled: false
+        }
+      },
       model: {
         primary: "groq/llama-4-scout-17b-16e-instruct",
         fallbacks: [
@@ -16,6 +92,9 @@
       {
         id: "planner",
         workspace: "/app/.agents/planner",
+        tools: {
+          deny: ["group:web", "browser"]
+        },
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: ["google/gemini-2.0-flash"]
@@ -24,6 +103,9 @@
       {
         id: "data",
         workspace: "/app/.agents/data",
+        tools: {
+          deny: ["group:web", "browser"]
+        },
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: ["google/gemini-2.0-flash"]
@@ -32,6 +114,9 @@
       {
         id: "strategy",
         workspace: "/app/.agents/strategy",
+        tools: {
+          deny: ["group:web", "browser"]
+        },
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: ["google/gemini-2.0-flash"]
@@ -40,6 +125,9 @@
       {
         id: "risk",
         workspace: "/app/.agents/risk",
+        tools: {
+          deny: ["group:web", "browser"]
+        },
         model: {
           primary: "groq/llama-4-scout-17b-16e-instruct",
           fallbacks: ["google/gemini-2.0-flash"]
