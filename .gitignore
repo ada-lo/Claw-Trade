@@ -4,4 +4,8 @@ runtime/
 *.log
 *.pem
 __pycache__/
-
+runtime/keys/
+runtime/audit/
+runtime/state/
+node_modules/
+.agents/
