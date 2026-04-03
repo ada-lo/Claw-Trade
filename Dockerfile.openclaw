@@ -1,0 +1,9 @@
+FROM node:24-alpine
+WORKDIR /app
+RUN npm install -g openclaw@latest
+COPY package*.json ./
+RUN npm install
+COPY . .
+COPY openclaw.json5 /root/.openclaw/openclaw.json5
+RUN chmod +x scripts/setup-agents.sh && sh scripts/setup-agents.sh
+RUN npm run generate:keys 2>/dev/null || true

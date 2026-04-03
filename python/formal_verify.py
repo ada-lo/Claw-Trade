@@ -2,7 +2,55 @@ from __future__ import annotations
 
 import json
 import sys
+from fastapi import FastAPI
+from pydantic import BaseModel
+from z3 import *
 
+app = FastAPI()
+
+class IntentRequest(BaseModel):
+    action: str
+    ticker: str
+    quantity: int
+    limit_price: float
+    daily_spent: float = 0.0
+    daily_limit: float = 10000.0
+    allowed_tickers: list[str] = ["AAPL", "MSFT", "TSLA", "NVDA", "GOOGL"]
+
+class VerifyResult(BaseModel):
+    allowed: bool
+    reason: str
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.post("/verify", response_model=VerifyResult)
+def verify(req: IntentRequest):
+    amount = Real("amount")
+    ticker_ok = BoolVal(req.ticker in req.allowed_tickers)
+
+    s = Solver()
+
+    # Constraint 1: trade cost must not exceed daily limit
+    trade_cost = req.quantity * req.limit_price
+    total_exposure = trade_cost + req.daily_spent
+    s.add(amount == total_exposure)
+    s.add(amount <= req.daily_limit)
+
+    # Constraint 2: ticker must be in allowed list
+    s.add(ticker_ok)
+
+    if s.check() == sat:
+        return VerifyResult(allowed=True, reason="SAT: intent satisfies all policy constraints")
+    else:
+        core_reason = (
+            f"UNSAT: trade would exceed daily limit "
+            f"(${total_exposure:,.0f} > ${req.daily_limit:,.0f})"
+            if total_exposure > req.daily_limit
+            else f"UNSAT: ticker {req.ticker} not in allowed list"
+        )
+        return VerifyResult(allowed=False, reason=core_reason)
 
 def emit(payload: dict, exit_code: int = 0) -> int:
     sys.stdout.write(json.dumps(payload))

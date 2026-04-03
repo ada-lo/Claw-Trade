@@ -1,25 +1,33 @@
 services:
   openclaw:
-    image: node:24-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
     container_name: openclaw_runtime
     working_dir: /app
     volumes:
       - .:/app
+      - openclaw_modules:/app/node_modules
+      - openclaw_config:/root/.openclaw
     ports:
       - "18789:18789"
       - "1933:1933"
       - "8020:8020"
+    env_file:
+      - .env
     environment:
-      - EXECUTION_MODE=dry-run
-      - FORMAL_VERIFY_MODE=strict
-      - Z3_VERIFIER_URL=http://z3_verifier:5001
-    command: >
-      sh -c "npm install -g openclaw@latest &&
-             npm install &&
-             node src/server.js"
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - HUGGINGFACE_HUB_TOKEN=${HF_TOKEN}
+      - EXECUTION_MODE=${EXECUTION_MODE}
+      - FORMAL_VERIFY_MODE=${FORMAL_VERIFY_MODE}
+      - Z3_VERIFIER_URL=${Z3_VERIFIER_URL}
+    command: node src/server.js
     restart: unless-stopped
     depends_on:
-      - z3_verifier
+      z3_verifier:
+        condition: service_healthy
 
   z3_verifier:
     image: python:3.11-slim
@@ -33,3 +41,12 @@ services:
     ports:
       - "5001:5001"
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  openclaw_modules:
+  openclaw_config:
