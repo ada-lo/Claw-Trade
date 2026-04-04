@@ -2,7 +2,7 @@
 set -eu
 
 # Copy auth credentials to all agent directories so each agent
-# can authenticate with the configured API providers
+# can authenticate with the configured API providers.
 copy_agent_auth() {
   SRC="/root/.openclaw/agents/main/agent/auth-profiles.json"
   if [ -f "$SRC" ]; then
