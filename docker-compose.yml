@@ -32,7 +32,9 @@ services:
     # Gateway does NOT auto-start. To start it manually:
     #   docker exec -it openclaw_runtime openclaw gateway run
     # Then open: http://localhost:18789
-    command: /app/scripts/openclaw-runtime.sh
+    command:
+      - node
+      - /app/src/server.js
     restart: unless-stopped
     depends_on:
       z3_verifier:
