@@ -306,11 +306,35 @@ function toToolResult(summary, details = summary) {
     content: [
       {
         type: "text",
-        text: JSON.stringify(summary, null, 2)
+        text: summary
       }
     ],
     details
   };
+}
+
+function summarizeDecision(decision) {
+  const reasons = Array.isArray(decision?.reasons)
+    ? decision.reasons.filter(Boolean)
+    : [];
+  const primaryReason = reasons[0] ?? "No reason provided.";
+
+  if (!decision?.allowed) {
+    const blockedBy = decision?.blocked_by ? ` at ${decision.blocked_by}` : "";
+    return `Trade blocked${blockedBy}: ${primaryReason}`;
+  }
+
+  if (decision?.execution?.simulated) {
+    return `Trade approved in dry-run mode. Audit hash: ${decision.audit_record?.entry_hash ?? "pending"}`;
+  }
+
+  if (decision?.execution?.broker) {
+    const broker = decision.execution.broker;
+    const orderId = decision.execution.order_id ?? "pending";
+    return `Trade approved and sent to ${broker}. Order id: ${orderId}. Audit hash: ${decision.audit_record?.entry_hash ?? "pending"}`;
+  }
+
+  return "Trade approved by ArmorClaw.";
 }
 
 async function defaultGetPipeline() {
@@ -327,13 +351,44 @@ export async function beforeToolCall(event, toolContext = {}) {
 
   const pipeline = await defaultGetPipeline();
   const envelope = mapToolEventToEnvelope(event, toolContext);
-  const decision = await pipeline.evaluateIntent(envelope);
+  relayToGlassbox("pipeline:start", { envelope });
+  const decision = await pipeline.evaluateIntent(envelope, {
+    onLayer(entry) {
+      relayToGlassbox("pipeline:layer", { entry });
+    }
+  });
 
   if (!decision.allowed) {
-    await pipeline.auditDecision(decision, envelope);
+    const auditRecord = await pipeline.auditDecision(decision, envelope);
+    relayToGlassbox("pipeline:layer", {
+      entry: {
+        layer: "L9",
+        name: "AuditLog",
+        status: "RECORDED",
+        detail: `hash=${auditRecord.entry_hash}`
+      }
+    });
+    relayToGlassbox("pipeline:complete", {
+      decision: {
+        allowed: false,
+        blocked_by: decision.blocked_by ?? null,
+        reasons: decision.reasons ?? [],
+        execution: null,
+        audit_hash: auditRecord.entry_hash,
+        layer_trace: [
+          ...(decision.layer_trace ?? []),
+          {
+            layer: "L9",
+            name: "AuditLog",
+            status: "RECORDED",
+            detail: `hash=${auditRecord.entry_hash}`
+          }
+        ]
+      }
+    });
     return {
       block: true,
-      blockReason: decision.reasons.join(" ")
+      blockReason: summarizeDecision(decision)
     };
   }
 
@@ -384,7 +439,10 @@ export function createOpenClawTradeTool({
 
       relayToGlassbox("pipeline:complete", { decision: result });
 
-      return toToolResult(result, decision);
+      return toToolResult(summarizeDecision(decision), {
+        summary: result,
+        ...decision
+      });
     }
   };
 }

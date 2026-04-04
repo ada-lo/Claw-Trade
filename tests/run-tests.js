@@ -183,7 +183,7 @@ const cases = [
       assert.equal(result.details.execution.simulated, true);
       assert.equal(result.details.layer_trace[0].layer, "L1");
       assert.equal(result.details.layer_trace[8].layer, "L9");
-      assert.match(result.content[0].text, /"allowed": true/);
+      assert.match(result.content[0].text, /Trade approved in dry-run mode/i);
     }
   },
   {
@@ -227,6 +227,36 @@ const cases = [
         "MSFT"
       ]);
       assert.equal(result.details.envelope.evidence.sources[0].provider, "alpaca");
+    }
+  },
+  {
+    name: "returns a readable block reason for out-of-policy tickers",
+    async run() {
+      const { pipeline } = await createTestPipeline(async () =>
+        createFetchResponse({
+          allowed: true,
+          reason: "SAT: intent satisfies all policy constraints"
+        })
+      );
+      const tool = createOpenClawTradeTool({
+        toolContext: {
+          agentId: "openclaw-operator",
+          sessionKey: "session-blocked-ticker"
+        },
+        getPipeline: async () => pipeline
+      });
+
+      const result = await tool.execute("tool-call-3", {
+        symbol: "TSLA",
+        side: "buy",
+        quantity: 1,
+        limit_price: 100
+      });
+
+      assert.equal(result.details.allowed, false);
+      assert.equal(result.details.blocked_by, "policy_engine");
+      assert.match(result.content[0].text, /Trade blocked at policy_engine/i);
+      assert.match(result.content[0].text, /Ticker is not approved by policy/i);
     }
   }
 ];
