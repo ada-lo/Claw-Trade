@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GlassBox — Real-time visual debugger for the ArmorClaw 9-layer AI trading security pipeline">
+  <title>GlassBox — ArmorClaw Pipeline Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ─── Header ─── -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-icon">🦀</span>
+        <div class="logo-text">
+          <h1>GlassBox</h1>
+          <span class="logo-sub">ArmorClaw Pipeline Visualizer</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="connection-status" id="connection-status">
+        <span class="status-dot"></span>
+        <span class="status-label">Connecting…</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="policy-badge" id="policy-badge">
+        <span class="badge-label">Policy</span>
+        <span class="badge-value" id="policy-profile">—</span>
+      </div>
+      <div class="policy-badge">
+        <span class="badge-label">Mode</span>
+        <span class="badge-value" id="exec-mode">—</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Main Layout ─── -->
+  <main id="app-main">
+
+    <!-- Left Panel: Scenario Picker -->
+    <section class="panel panel-scenarios" id="panel-scenarios">
+      <div class="panel-header">
+        <h2>🎯 Intent Scenarios</h2>
+      </div>
+      <div class="panel-body">
+        <div class="scenario-cards" id="scenario-cards">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="custom-intent-toggle">
+          <button class="btn btn-ghost" id="toggle-custom">
+            <span>⚙</span> Custom Intent
+          </button>
+        </div>
+
+        <div class="custom-intent-editor hidden" id="custom-editor">
+          <textarea id="custom-json" spellcheck="false" placeholder='{"intent": {"type": "trade", ...}}'></textarea>
+          <button class="btn btn-primary" id="send-custom">Send Custom Intent</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Center Panel: Pipeline Visualizer -->
+    <section class="panel panel-pipeline" id="panel-pipeline">
+      <div class="panel-header">
+        <h2>🔬 9-Layer Pipeline</h2>
+        <span class="pipeline-verdict" id="pipeline-verdict"></span>
+      </div>
+      <div class="panel-body">
+        <div class="pipeline-container" id="pipeline-container">
+          <div class="pipeline-track">
+            <!-- Each layer node -->
+            <div class="layer-node" data-layer="L1" data-name="DataTrust">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L1</div>
+              <div class="layer-info">
+                <span class="layer-name">DataTrust</span>
+                <span class="layer-desc">Source validation &amp; injection detection</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L2" data-name="Sandbox">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L2</div>
+              <div class="layer-info">
+                <span class="layer-name">Sandbox</span>
+                <span class="layer-desc">LLM isolation boundary</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L3" data-name="Schema">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L3</div>
+              <div class="layer-info">
+                <span class="layer-name">Schema</span>
+                <span class="layer-desc">Intent envelope validation</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L4" data-name="Z3 Verifier">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L4</div>
+              <div class="layer-info">
+                <span class="layer-name">Z3 Verifier</span>
+                <span class="layer-desc">Formal SMT constraint solving</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L5" data-name="ArmorClaw">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L5</div>
+              <div class="layer-info">
+                <span class="layer-name">ArmorClaw</span>
+                <span class="layer-desc">Runtime policy rules engine</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L6" data-name="BehaviorMonitor">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L6</div>
+              <div class="layer-info">
+                <span class="layer-name">BehaviorMonitor</span>
+                <span class="layer-desc">Rate limiting &amp; drift detection</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L7" data-name="IntentSigner">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L7</div>
+              <div class="layer-info">
+                <span class="layer-name">IntentSigner</span>
+                <span class="layer-desc">Ed25519 cryptographic signing</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L8" data-name="ExecutionProxy">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L8</div>
+              <div class="layer-info">
+                <span class="layer-name">ExecutionProxy</span>
+                <span class="layer-desc">Signature check, nonce &amp; broker</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+            <div class="layer-node" data-layer="L9" data-name="AuditLog">
+              <div class="layer-connector"></div>
+              <div class="layer-badge">L9</div>
+              <div class="layer-info">
+                <span class="layer-name">AuditLog</span>
+                <span class="layer-desc">HMAC-chained tamper-proof record</span>
+              </div>
+              <div class="layer-status"><span class="status-icon">●</span></div>
+              <div class="layer-detail-text"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Decision Inspector -->
+    <section class="panel panel-inspector" id="panel-inspector">
+      <div class="panel-header">
+        <h2>📋 Decision Inspector</h2>
+        <button class="btn btn-ghost btn-sm" id="copy-json" title="Copy JSON">📋</button>
+      </div>
+      <div class="panel-body">
+        <div class="inspector-empty" id="inspector-empty">
+          <div class="empty-icon">🔍</div>
+          <p>Run a scenario to inspect the pipeline decision</p>
+        </div>
+        <div class="inspector-content hidden" id="inspector-content">
+          <div class="inspector-summary" id="inspector-summary"></div>
+          <pre class="inspector-json" id="inspector-json"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── Bottom: Audit Trail ─── -->
+  <section class="panel panel-audit" id="panel-audit">
+    <div class="panel-header">
+      <h2>📜 Audit Trail</h2>
+      <div class="audit-filters">
+        <button class="btn btn-ghost btn-sm filter-active" data-filter="all">All</button>
+        <button class="btn btn-ghost btn-sm" data-filter="allowed">✅ Allowed</button>
+        <button class="btn btn-ghost btn-sm" data-filter="blocked">❌ Blocked</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="clear-audit">Clear</button>
+    </div>
+    <div class="panel-body">
+      <div class="audit-list" id="audit-list">
+        <div class="audit-empty" id="audit-empty">No decisions yet — run a scenario above</div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

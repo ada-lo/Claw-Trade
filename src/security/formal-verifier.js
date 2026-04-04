@@ -56,6 +56,9 @@ export class FormalVerifier {
         signal: AbortSignal.timeout(5000)
       });
     } catch (error) {
+      if (this.mode === "lenient") {
+        return this._localFallback(request, `Z3 unreachable: ${error.message}`);
+      }
       return {
         allowed: false,
         code: "formal_verifier_unavailable",
@@ -118,6 +121,52 @@ export class FormalVerifier {
         daily_spent_usd: request.daily_spent,
         daily_limit_usd: request.daily_limit,
         daily_notional_after_usd: request.daily_spent + orderNotional
+      },
+      request
+    };
+  }
+
+  _localFallback(request, context) {
+    const orderNotional = Number(request.quantity) * Number(request.limit_price);
+    const totalDaily = Number(request.daily_spent) + orderNotional;
+    const dailyLimit = Number(request.daily_limit);
+    const violations = [];
+
+    if (dailyLimit > 0 && totalDaily > dailyLimit) {
+      violations.push(
+        `Daily notional $${totalDaily} exceeds limit $${dailyLimit}`
+      );
+    }
+
+    if (
+      Array.isArray(request.allowed_tickers) &&
+      request.allowed_tickers.length > 0 &&
+      !request.allowed_tickers.includes(request.ticker)
+    ) {
+      violations.push(
+        `Ticker ${request.ticker} not in allowlist [${request.allowed_tickers.join(", ")}]`
+      );
+    }
+
+    if (violations.length > 0) {
+      return {
+        allowed: false,
+        code: "local_unsat",
+        reason: violations.join("; "),
+        reasons: violations,
+        unsat_core: violations,
+        request
+      };
+    }
+
+    return {
+      allowed: true,
+      reason: `Local fallback SAT (${context})`,
+      summary: {
+        order_notional_usd: orderNotional,
+        daily_spent_usd: request.daily_spent,
+        daily_limit_usd: dailyLimit,
+        daily_notional_after_usd: totalDaily
       },
       request
     };

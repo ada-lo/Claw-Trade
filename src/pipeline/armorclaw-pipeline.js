@@ -70,12 +70,16 @@ export class ArmorClawPipeline {
     });
   }
 
-  async evaluateIntent(envelope) {
+  async evaluateIntent(envelope, { onLayer } = {}) {
     const layerTrace = [];
+    const emit = (entry) => {
+      layerTrace.push(entry);
+      if (typeof onLayer === "function") onLayer(entry);
+    };
 
     const trustedDecision = this.dataTrust.evaluate(envelope);
     if (!trustedDecision.allowed) {
-      layerTrace.push(
+      emit(
         traceEntry("L1", "DataTrust", "BLOCKED", trustedDecision.reasons.join(" "))
       );
       return blockedDecision("data_trust", trustedDecision.reasons, {
@@ -84,7 +88,7 @@ export class ArmorClawPipeline {
       });
     }
 
-    layerTrace.push(
+    emit(
       traceEntry(
         "L1",
         "DataTrust",
@@ -92,11 +96,11 @@ export class ArmorClawPipeline {
         `${trustedDecision.trusted_sources_count} trusted source(s)`
       )
     );
-    layerTrace.push(traceEntry("L2", "Sandbox", "PASS", "external"));
+    emit(traceEntry("L2", "Sandbox", "PASS", "external"));
 
     const schemaDecision = validateIntentEnvelope(trustedDecision.sanitized_envelope);
     if (!schemaDecision.valid) {
-      layerTrace.push(
+      emit(
         traceEntry("L3", "Schema", "BLOCKED", schemaDecision.errors.join(" "))
       );
       return blockedDecision("intent_schema", schemaDecision.errors, {
@@ -105,7 +109,7 @@ export class ArmorClawPipeline {
       });
     }
 
-    layerTrace.push(traceEntry("L3", "Schema", "PASS"));
+    emit(traceEntry("L3", "Schema", "PASS"));
     const trustedEnvelope = schemaDecision.envelope;
 
     const formalDecision = await this.formalVerifier.verify(
@@ -113,7 +117,7 @@ export class ArmorClawPipeline {
       this.policy
     );
     if (!formalDecision.allowed) {
-      layerTrace.push(
+      emit(
         traceEntry(
           "L4",
           "Z3 Verifier",
@@ -131,7 +135,7 @@ export class ArmorClawPipeline {
       );
     }
 
-    layerTrace.push(
+    emit(
       traceEntry(
         "L4",
         "Z3 Verifier",
@@ -142,7 +146,7 @@ export class ArmorClawPipeline {
 
     const policyDecision = this.policyEngine.evaluate(trustedEnvelope);
     if (!policyDecision.allowed) {
-      layerTrace.push(
+      emit(
         traceEntry(
           "L5",
           "ArmorClaw",
@@ -160,11 +164,11 @@ export class ArmorClawPipeline {
       );
     }
 
-    layerTrace.push(traceEntry("L5", "ArmorClaw", "PASS"));
+    emit(traceEntry("L5", "ArmorClaw", "PASS"));
 
     const behaviorDecision = this.behaviorMonitor.evaluate(trustedEnvelope);
     if (!behaviorDecision.allowed) {
-      layerTrace.push(
+      emit(
         traceEntry(
           "L6",
           "BehaviorMonitor",
@@ -178,7 +182,7 @@ export class ArmorClawPipeline {
       });
     }
 
-    layerTrace.push(
+    emit(
       traceEntry(
         "L6",
         "BehaviorMonitor",
@@ -198,7 +202,7 @@ export class ArmorClawPipeline {
       }
     });
 
-    layerTrace.push(traceEntry("L7", "IntentSigner", "SIGNED"));
+    emit(traceEntry("L7", "IntentSigner", "SIGNED"));
     return {
       allowed: true,
       envelope: trustedEnvelope,
@@ -218,13 +222,19 @@ export class ArmorClawPipeline {
     });
   }
 
-  async processIntent(envelope) {
-    const evaluation = await this.evaluateIntent(envelope);
+  async processIntent(envelope, { onLayer } = {}) {
+    const emit = (entry) => {
+      if (typeof onLayer === "function") onLayer(entry);
+    };
+
+    const evaluation = await this.evaluateIntent(envelope, { onLayer });
     if (!evaluation.allowed) {
       const auditRecord = await this.auditDecision(evaluation, envelope);
+      const auditEntry = traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`);
+      emit(auditEntry);
       const layerTrace = [
         ...(evaluation.layer_trace ?? []),
-        traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`)
+        auditEntry
       ];
       return {
         ...evaluation,
@@ -237,14 +247,16 @@ export class ArmorClawPipeline {
       evaluation.signed_intent
     );
     if (!executionDecision.allowed) {
+      const execEntry = traceEntry(
+        "L8",
+        "ExecutionProxy",
+        "BLOCKED",
+        executionDecision.reasons.join(" ")
+      );
+      emit(execEntry);
       const executionTrace = [
         ...(evaluation.layer_trace ?? []),
-        traceEntry(
-          "L8",
-          "ExecutionProxy",
-          "BLOCKED",
-          executionDecision.reasons.join(" ")
-        )
+        execEntry
       ];
       const blockedExecution = {
         ...evaluation,
@@ -253,9 +265,11 @@ export class ArmorClawPipeline {
         layer_trace: executionTrace
       };
       const auditRecord = await this.auditDecision(blockedExecution, evaluation.envelope);
+      const auditEntry = traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`);
+      emit(auditEntry);
       const finalTrace = [
         ...executionTrace,
-        traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`)
+        auditEntry
       ];
       return {
         ...blockedExecution,
@@ -271,9 +285,11 @@ export class ArmorClawPipeline {
     const executionDetail = executionDecision.execution?.simulated
       ? "no real order sent"
       : `broker=${executionDecision.execution?.broker ?? "unknown"}`;
+    const execEntry = traceEntry("L8", "ExecutionProxy", executionStatus, executionDetail);
+    emit(execEntry);
     const executionTrace = [
       ...(evaluation.layer_trace ?? []),
-      traceEntry("L8", "ExecutionProxy", executionStatus, executionDetail)
+      execEntry
     ];
     const finalDecision = {
       ...evaluation,
@@ -281,9 +297,11 @@ export class ArmorClawPipeline {
       layer_trace: executionTrace
     };
     const auditRecord = await this.auditDecision(finalDecision, evaluation.envelope);
+    const auditEntry = traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`);
+    emit(auditEntry);
     const finalTrace = [
       ...executionTrace,
-      traceEntry("L9", "AuditLog", "RECORDED", `hash=${auditRecord.entry_hash}`)
+      auditEntry
     ];
     return {
       ...finalDecision,
