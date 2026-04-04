@@ -204,6 +204,16 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Relay endpoint: receives pipeline events from OpenClaw gateway plugin
+    if (request.method === "POST" && url.pathname === "/api/glassbox-relay") {
+      const event = await readJson(request);
+      if (event.type) {
+        pipelineEvents.emit("event", event);
+      }
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
     // Legacy endpoints
     if (request.method === "POST" && url.pathname === "/evaluate") {
       const envelope = await readJson(request);

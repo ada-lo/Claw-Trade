@@ -2,6 +2,19 @@ import { randomUUID } from "node:crypto";
 
 import { createPipeline } from "../create-pipeline.js";
 
+const GLASSBOX_URL = process.env.GLASSBOX_URL ?? "http://localhost:1933";
+
+async function relayToGlassbox(type, data) {
+  try {
+    await fetch(`${GLASSBOX_URL}/api/glassbox-relay`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type, ...data }),
+      signal: AbortSignal.timeout(2000)
+    });
+  } catch { /* GlassBox may not be running — silently ignore */ }
+}
+
 let cachedPipeline = null;
 
 const TRADE_TOOL_NAME = "alpaca.place_order";
@@ -351,19 +364,27 @@ export function createOpenClawTradeTool({
         },
         toolContext
       );
-      const decision = await pipeline.processIntent(envelope);
 
-      return toToolResult(
-        {
-          allowed: decision.allowed,
-          blocked_by: decision.blocked_by ?? null,
-          reasons: decision.reasons ?? [],
-          execution: decision.execution ?? null,
-          audit_hash: decision.audit_record?.entry_hash ?? null,
-          layer_trace: decision.layer_trace ?? []
-        },
-        decision
-      );
+      relayToGlassbox("pipeline:start", { envelope });
+
+      const decision = await pipeline.processIntent(envelope, {
+        onLayer(entry) {
+          relayToGlassbox("pipeline:layer", { entry });
+        }
+      });
+
+      const result = {
+        allowed: decision.allowed,
+        blocked_by: decision.blocked_by ?? null,
+        reasons: decision.reasons ?? [],
+        execution: decision.execution ?? null,
+        audit_hash: decision.audit_record?.entry_hash ?? null,
+        layer_trace: decision.layer_trace ?? []
+      };
+
+      relayToGlassbox("pipeline:complete", { decision: result });
+
+      return toToolResult(result, decision);
     }
   };
 }
