@@ -26,6 +26,8 @@
 
   agents: {
     defaults: {
+      userTimezone: "Asia/Kolkata",
+      timeFormat: "auto",
       sandbox: {
         mode: "off",
         backend: "docker",
