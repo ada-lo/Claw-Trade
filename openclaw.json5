@@ -61,9 +61,9 @@
         id: "planner",
         workspace: "/app/.agents/planner",
         model: {
-          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+          primary: "google/gemini-2.0-flash",
           fallbacks: [
-            "google/gemini-2.0-flash",
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
             "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
@@ -72,9 +72,9 @@
         id: "data",
         workspace: "/app/.agents/data",
         model: {
-          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+          primary: "google/gemini-2.0-flash",
           fallbacks: [
-            "google/gemini-2.0-flash",
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
             "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
@@ -83,9 +83,9 @@
         id: "strategy",
         workspace: "/app/.agents/strategy",
         model: {
-          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+          primary: "google/gemini-2.0-flash",
           fallbacks: [
-            "google/gemini-2.0-flash",
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
             "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
@@ -94,9 +94,9 @@
         id: "risk",
         workspace: "/app/.agents/risk",
         model: {
-          primary: "groq/meta-llama/llama-4-scout-17b-16e-instruct",
+          primary: "google/gemini-2.0-flash",
           fallbacks: [
-            "google/gemini-2.0-flash",
+            "groq/meta-llama/llama-4-scout-17b-16e-instruct",
             "huggingface/Qwen/Qwen3-8B:fastest"
           ]
         }
